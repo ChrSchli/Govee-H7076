@@ -1,0 +1,11 @@
+{
+  "id": "{B1B67B6E-7B42-4F51-8C4A-66C2B3F5C102}",
+  "name": "Govee H7076",
+  "type": 3,
+  "vendor": "Govee",
+  "aliases": ["Govee H7076 Wall Light"],
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "GH76"
+}
