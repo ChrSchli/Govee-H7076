@@ -28,6 +28,34 @@ class GoveeH7076 extends IPSModule
         $ready = trim($this->ReadPropertyString('APIKey')) !== '' &&
             trim($this->ReadPropertyString('Device')) !== '';
         $this->SetStatus($ready ? 102 : 104);
+
+        // Nur bei geaenderter Geraete-ID den Instanznamen synchronisieren.
+        // Ein API-Fehler darf die bestehende Konfiguration nicht blockieren.
+        $device = trim($this->ReadPropertyString('Device'));
+        if (!$ready) {
+            $this->SetBuffer('LastNamedDevice', '');
+            return;
+        }
+        if ($this->GetBuffer('LastNamedDevice') === $device) {
+            return;
+        }
+        try {
+            $result = $this->ApiRequest('GET', '/user/devices');
+            foreach (($result['data'] ?? []) as $item) {
+                if (($item['sku'] ?? '') !== 'H7076' ||
+                    (string)($item['device'] ?? '') !== $device) {
+                    continue;
+                }
+                $name = trim((string)($item['deviceName'] ?? ''));
+                if ($name !== '') {
+                    IPS_SetName($this->InstanceID, $name);
+                    $this->SetBuffer('LastNamedDevice', $device);
+                }
+                break;
+            }
+        } catch (Throwable $e) {
+            $this->SendDebug('AutoName', $e->getMessage(), 0);
+        }
     }
 
     public function GetConfigurationForm()
