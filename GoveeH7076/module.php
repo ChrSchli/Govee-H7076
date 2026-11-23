@@ -33,7 +33,10 @@ class GoveeH7076 extends IPSModule
     public function GetConfigurationForm()
     {
         $current = $this->ReadPropertyString('Device');
-        $options = [];
+        // Leere Auswahl muss bei neuen Instanzen gueltig sein.
+        $options = [
+            ['caption' => 'Bitte Govee H7076 auswählen', 'value' => '']
+        ];
         $notice = 'API-Key eintragen und Übernehmen klicken; danach Konfiguration erneut öffnen.';
         if (trim($this->ReadPropertyString('APIKey')) !== '') {
             try {
@@ -47,7 +50,7 @@ class GoveeH7076 extends IPSModule
                         'value' => (string)$item['device']
                     ];
                 }
-                $notice = count($options) > 0
+                $notice = count($options) > 1
                     ? 'Leuchte auswählen und Übernehmen klicken. Für jede H7076 eine eigene Instanz anlegen.'
                     : 'Keine H7076 in der Govee-Geräteliste gefunden.';
             } catch (Throwable $e) {
