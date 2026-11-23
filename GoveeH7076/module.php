@@ -32,21 +32,47 @@ class GoveeH7076 extends IPSModule
 
     public function GetConfigurationForm()
     {
+        $current = $this->ReadPropertyString('Device');
+        $options = [];
+        $notice = 'API-Key eintragen und Übernehmen klicken; danach Konfiguration erneut öffnen.';
+        if (trim($this->ReadPropertyString('APIKey')) !== '') {
+            try {
+                $result = $this->ApiRequest('GET', '/user/devices');
+                foreach (($result['data'] ?? []) as $item) {
+                    if (($item['sku'] ?? '') !== 'H7076' || empty($item['device'])) {
+                        continue;
+                    }
+                    $options[] = [
+                        'caption' => ($item['deviceName'] ?? 'H7076') . ' (H7076)',
+                        'value' => (string)$item['device']
+                    ];
+                }
+                $notice = count($options) > 0
+                    ? 'Leuchte auswählen und Übernehmen klicken. Für jede H7076 eine eigene Instanz anlegen.'
+                    : 'Keine H7076 in der Govee-Geräteliste gefunden.';
+            } catch (Throwable $e) {
+                $notice = 'Geräteliste nicht abrufbar: ' . $e->getMessage();
+            }
+        }
+        // Eine zuvor gespeicherte ID bleibt auch bei vorübergehendem API-Fehler wählbar.
+        if ($current !== '' && !in_array($current, array_column($options, 'value'), true)) {
+            $options[] = ['caption' => 'Bisher gespeichertes Gerät', 'value' => $current];
+        }
         return json_encode([
             'elements' => [
                 ['type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'Govee API-Key'],
-                ['type' => 'ValidationTextBox', 'name' => 'Device', 'caption' => 'Geräte-ID (device)'],
-                ['type' => 'Label', 'caption' => 'Geräte-ID aus dem separaten Gerätelisten-Skript übernehmen. Jede Leuchte benötigt eine eigene Instanz.']
+                ['type' => 'Select', 'name' => 'Device', 'caption' => 'Govee H7076 auswählen', 'options' => $options],
+                ['type' => 'Label', 'caption' => $notice]
             ],
             'actions' => [
                 ['type' => 'Button', 'caption' => 'Verbindung testen', 'onClick' => 'GH76_TestConnection($id);']
             ],
             'status' => [
                 ['code' => 102, 'icon' => 'active', 'caption' => 'Bereit'],
-                ['code' => 104, 'icon' => 'inactive', 'caption' => 'API-Key oder Geräte-ID fehlt'],
+                ['code' => 104, 'icon' => 'inactive', 'caption' => 'API-Key oder Gerät fehlt'],
                 ['code' => 201, 'icon' => 'error', 'caption' => 'API-Fehler']
             ]
-        ], JSON_UNESCAPED_UNICODE);
+        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     public function RequestAction($Ident, $Value)
